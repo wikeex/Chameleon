@@ -1,21 +1,66 @@
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
+from substrateinterface import SubstrateInterface
+
 from monitor.base import Monitor
+from typing import List, Tuple, Union
 
 
 class PhalaMonitor(Monitor):
 
-    def __init__(self, host: str, port: int, work):
-        self.rpc_endpoint = f'http://{host}:{port}'
-        self.substrate = None
-
-    async def _fetch(self):
-        result = self.substrate.query(
-            module='phalaMining',
-            storage_function='miners',
-            params=[f'']
+    def __init__(self, workers: Union[List[str], Tuple[str]],
+                 substrate_url: str = f'wss://khala.api.onfinality.io/public-ws',
+                 interval: int = 30
+                 ):
+        super().__init__(interval=interval)
+        self.substrate_url = substrate_url
+        self.workers = workers
+        self.substrate = SubstrateInterface(
+            url="wss://khala.api.onfinality.io/public-ws",
+            ss58_format=42,
+            type_registry_preset='kusama'
         )
 
+    def _fetch(self, worker_public_hash):
+        # 获取worker绑定的账户
+        account = self.substrate.query(
+            module='PhalaMining',
+            storage_function='WorkerBindings',
+            params=[worker_public_hash]
+        )
+
+        # 使用worker绑定的账户查询worker的状态
+        result = self.substrate.query(
+            module='PhalaMining',
+            storage_function='Miners',
+            params=[account.value]
+        )
+        return result.value
+
+    def _monitor(self):
+        loop = asyncio.new_event_loop()
+        while True:
+            for worker in self.workers:
+                try:
+                    result = self._fetch(worker)
+                    if result['state'] not in ['MiningIdle', 'Mining']:
+                        loop.run_until_complete(self._alert(f'worker {worker} 非正常工作状态，请检查！'))
+                    else:
+                        print(f'worker {worker} 工作正常。')
+                except Exception as e:
+                    print(e)
+                    loop.run_until_complete(self._alert(f'获取worker状态失败，请检查网络或节点状态！'))
+                loop.run_until_complete(asyncio.sleep(self.internal))
+
     async def monitor(self):
-        pass
+        pool = ThreadPoolExecutor(max_workers=10)
+        await asyncio.get_event_loop().run_in_executor(pool, self._monitor)
 
     async def _alert(self, message: str):
-        pass
+        print(message)
+
+
+if __name__ == '__main__':
+    phala = PhalaMonitor(['0xd6edac6c588244402e8a256927f99be6519ca5578e0ca9760a4e8537b0e5d275'])
+    asyncio.get_event_loop().run_until_complete(phala.monitor())

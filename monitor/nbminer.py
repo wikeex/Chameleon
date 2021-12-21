@@ -7,6 +7,7 @@ import aiohttp
 class NBMinerMonitor(Monitor):
 
     def __init__(self, host: str, port: int, alert_limit: float, interval: int = 30):
+        super().__init__(interval)
         self.url = f'http://{host}:{port}/api/v1/status'
         self.alert_limit = alert_limit
         self.interval = interval

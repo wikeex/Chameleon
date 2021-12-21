@@ -1,6 +1,8 @@
 import pytest
 from substrateinterface import SubstrateInterface
 
+from monitor.phala import PhalaMonitor
+
 
 def test_substrate():
     substrate = SubstrateInterface(
@@ -23,3 +25,9 @@ def test_substrate():
         params=[account.value]
     )
     print(result)
+
+
+@pytest.mark.asyncio
+async def test_phala():
+    phala = PhalaMonitor(['0xd6edac6c588244402e8a256927f99be6519ca5578e0ca9760a4e8537b0e5d275'])
+    await phala.monitor()
