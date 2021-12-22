@@ -1,5 +1,5 @@
 import pytest
-from hub.forward import check, forwarding_server
+from forward import check, forwarding_server
 
 
 @pytest.mark.asyncio

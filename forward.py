@@ -2,6 +2,7 @@ import asyncio
 import aiohttp
 from aiohttp import ClientTimeout
 from aiohttp_socks import ProxyConnector
+from log import logger
 
 
 async def check(proxy_address: str, username: str = '', password: str = '') -> bool:
@@ -11,13 +12,16 @@ async def check(proxy_address: str, username: str = '', password: str = '') -> b
         async with aiohttp.ClientSession(connector=connector, timeout=ClientTimeout(total=5)) as session:
             async with session.get(url) as response:
                 if response.status == 200:
+                    logger.info(f'{proxy_address} 代理联通正常')
                     return True
                 else:
+                    logger.error(f'无法通过代理{proxy_address}连接{url}，响应状态：{response.status}')
                     return False
     except asyncio.TimeoutError:
+        logger.error(f'检查代理超时，代理地址：{proxy_address}')
         return False
     except Exception as e:
-        print(e)
+        logger.error(f'检查代理连通性时发生错误：{e}')
         return False
 
 
@@ -27,7 +31,7 @@ async def forwarding(reader: asyncio.StreamReader, writer: asyncio.StreamWriter)
             data = await reader.read(2048)
             writer.write(data)
     except Exception as e:
-        print(e)
+        logger.error(f'转发时发生错误：{e}')
     finally:
         writer.close()
 
@@ -42,7 +46,7 @@ async def forwarding_server():
         handler, '127.0.0.1', 8888)
 
     address = server.sockets[0].getsockname()
-    print(f'Serving on {address}')
+    logger.info(f'Serving on {address}')
 
     async with server:
         await server.serve_forever()

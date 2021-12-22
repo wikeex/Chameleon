@@ -1,5 +1,5 @@
 import asyncio
-
+from log import logger
 from monitor.base import Monitor
 import aiohttp
 
@@ -23,10 +23,15 @@ class NBMinerMonitor(Monitor):
                 result = await self._fetch()
                 local_hash_rate = float(result['miner']['total_hashrate'].strip('M '))
                 if local_hash_rate < self.alert_limit:
+                    logger.error(
+                        f'NBMiner hash rate is too low, current: {local_hash_rate}M, except: {self.alert_limit}M'
+                    )
                     await self._alert(f'NBMiner hash率过低，当前hash率：{local_hash_rate}M，警戒线：{self.alert_limit}M')
+                else:
+                    logger.info(f'NBMiner hash rate is normal, current: {local_hash_rate}, except: {self.alert_limit}M')
             except Exception as e:
-                print(e)
-                await self._alert(f'无法连接NBMiner api，请检查服务')
+                logger.error(f'fetch NBMiner status encounter an error: {e}')
+                await self._alert(f'连接NBMiner api发生错误，请检查服务')
             await asyncio.sleep(self.interval)
 
     async def _alert(self, message: str):

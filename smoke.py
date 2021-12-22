@@ -1,7 +1,7 @@
 import asyncio
 import aiohttp
 from random import choice
-
+from log import logger
 from aiohttp import ClientTimeout
 
 
@@ -20,14 +20,15 @@ class Smoke:
         async with aiohttp.ClientSession(headers=self.headers, timeout=ClientTimeout(total=3)) as client:
             while True:
                 url = 'https://' + await self.common_tasks_q.get()
-                for _ in range(10):
+                for times in range(10):
                     try:
                         async with client.get(url=url.strip()) as response:
                             if response.status != 200:
                                 break
-                            await asyncio.sleep(5)
+                            logger.debug(f'smoke _common_task request {url} success {times + 1} times')
+                            await asyncio.sleep(1)
                     except Exception as e:
-                        print(e)
+                        logger.info(f'smoke _common_task request {url} encounter an error: {e}')
                         break
 
     async def _continuous_task(self):
@@ -39,14 +40,16 @@ class Smoke:
                         async with client.get(url=url.strip()) as response:
                             if response.status != 200:
                                 break
-                            await asyncio.sleep(5)
+                            logger.debug(f'smoke _continuous_task request {url} success')
+                            await asyncio.sleep(1)
                     except Exception as e:
-                        print(e)
+                        logger.info(f'smoke _continuous_task request {url} encounter an error: {e}')
                         break
 
     def _read_urls(self):
         with open('sites.txt', 'r') as f:
             self.urls = f.readlines()
+            logger.info(f'read {len(self.urls)} sites')
 
     async def _q_put(self, q: asyncio.queues.Queue):
         while True:
@@ -55,6 +58,7 @@ class Smoke:
 
     async def release(self):
         self._read_urls()
+        logger.info(f'releasing smoke...')
         await asyncio.gather(
             self._q_put(self.common_tasks_q),
             self._q_put(self.continuous_task_q),

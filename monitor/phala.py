@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from substrateinterface import SubstrateInterface
 
+from log import logger
 from monitor.base import Monitor
 from typing import List, Tuple, Union
 
@@ -45,11 +46,12 @@ class PhalaMonitor(Monitor):
                 try:
                     result = self._fetch(worker)
                     if result['state'] not in ['MiningIdle', 'Mining']:
-                        loop.run_until_complete(self._alert(f'worker {worker} 非正常工作状态，请检查！'))
+                        logger.error(f'phala worker {worker} is abnormal, current state: {result["state"]}')
+                        loop.run_until_complete(self._alert(f'phala worker {worker} 非正常工作状态，请检查！'))
                     else:
-                        print(f'worker {worker} 工作正常。')
+                        logger.info(f'phala worker {worker} state is {{result["state"]}}')
                 except Exception as e:
-                    print(e)
+                    logger.error(f'fetch phala worker {worker} status encounter an error: {e}')
                     loop.run_until_complete(self._alert(f'获取worker状态失败，请检查网络或节点状态！'))
                 loop.run_until_complete(asyncio.sleep(self.internal))
 
