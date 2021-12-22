@@ -1,8 +1,8 @@
 import logging.handlers
 from config import config
 
-info_log_filename = 'polka-plugin-info.log'
-error_log_filename = 'polka-plugin-error.log'
+info_log_filename = 'chameleon-info.log'
+error_log_filename = 'chameleon-error.log'
 logger = logging.getLogger('Logger')
 log_levels = {
     'info': logging.INFO,
