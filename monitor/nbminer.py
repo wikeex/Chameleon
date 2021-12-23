@@ -30,7 +30,7 @@ class NBMinerMonitor(Monitor):
                 else:
                     logger.info(f'NBMiner hash rate is normal, current: {local_hash_rate}, except: {self.alert_limit}M')
             except Exception as e:
-                logger.error(f'fetch NBMiner status encounter an error: {e}')
+                logger.error(f'fetch NBMiner status encounter an error: {e}', exc_info=True)
                 await self._alert(f'连接NBMiner api发生错误，请检查服务')
             await asyncio.sleep(self.interval)
 

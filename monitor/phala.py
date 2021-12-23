@@ -46,12 +46,12 @@ class PhalaMonitor(Monitor):
                 try:
                     result = self._fetch(worker)
                     if result['state'] not in ['MiningIdle', 'Mining']:
-                        logger.error(f'phala worker {worker} is abnormal, current state: {result["state"]}')
+                        logger.error(f'phala worker {worker} is abnormal, current state: {result["state"]}', exc_info=True)
                         loop.run_until_complete(self._alert(f'phala worker {worker} 非正常工作状态，请检查！'))
                     else:
-                        logger.info(f'phala worker {worker} state is {{result["state"]}}')
+                        logger.info(f'phala worker {worker} state is {result["state"]}')
                 except Exception as e:
-                    logger.error(f'fetch phala worker {worker} status encounter an error: {e}')
+                    logger.error(f'fetch phala worker {worker} status encounter an error: {e}', exc_info=True)
                     loop.run_until_complete(self._alert(f'获取worker状态失败，请检查网络或节点状态！'))
                 loop.run_until_complete(asyncio.sleep(self.internal))
 

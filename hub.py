@@ -37,7 +37,7 @@ async def check(host: str, port: int, username: str = '', password: str = '') ->
         logger.error(f'检查代理超时，代理地址：{host}:{port}')
         return False
     except Exception as e:
-        logger.error(f'检查代理{host}:{port}连通性时发生错误：{e}')
+        logger.error(f'检查代理{host}:{port}连通性时发生错误：{e}', exc_info=True)
         return False
 
 

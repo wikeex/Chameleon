@@ -28,7 +28,7 @@ class Smoke:
                             logger.debug(f'smoke _common_task request {url} success {times + 1} times')
                             await asyncio.sleep(1)
                     except Exception as e:
-                        logger.info(f'smoke _common_task request {url} encounter an error: {e}')
+                        logger.debug(f'smoke _common_task request {url} encounter an error: {e}', exc_info=True)
                         break
 
     async def _continuous_task(self):
@@ -43,7 +43,7 @@ class Smoke:
                             logger.debug(f'smoke _continuous_task request {url} success')
                             await asyncio.sleep(1)
                     except Exception as e:
-                        logger.info(f'smoke _continuous_task request {url} encounter an error: {e}')
+                        logger.debug(f'smoke _continuous_task request {url} encounter an error: {e}', exc_info=True)
                         break
 
     def _read_urls(self):

@@ -38,7 +38,7 @@ class ChiaMonitor(Monitor):
                 else:
                     logger.info(f'chia status is normal.')
             except Exception as e:
-                logger.error(f'fetch chia status encounter an error: {e}')
+                logger.error(f'fetch chia status encounter an error: {e}', exc_info=True)
                 await self._alert(f'获取plots数量失败，请检查网络和服务！')
 
     async def _alert(self, message: str):

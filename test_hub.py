@@ -10,5 +10,5 @@ async def test_check():
 
 @pytest.mark.asyncio
 async def test_run_server():
-    hub = Hub('localhost', '8888', [('localhost', 1080, '', '')])
+    hub = Hub('localhost', 8888, [('localhost', 1080)])
     await hub.run()
