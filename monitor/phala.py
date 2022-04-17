@@ -70,10 +70,7 @@ class PhalaMonitor(Monitor):
                 try:
                     result = self._fetch_worker_status(worker)
                     if result['state'] not in ['MiningIdle', 'Mining']:
-                        logger.error(
-                            f'substrate worker {worker} is abnormal, current state: {result["state"]}',
-                            exc_info=True
-                        )
+                        logger.error(f'substrate worker {worker} is abnormal, current state: {result["state"]}')
                         loop.run_until_complete(self._alert(f'substrate worker {worker} 非正常工作状态，请检查！'))
                     else:
                         logger.info(f'substrate worker {worker} state is {result["state"]}')
@@ -103,7 +100,7 @@ class PhalaMonitor(Monitor):
             await asyncio.sleep(20)
             prb_monitor_data = await self._post(prb_monitor_url, json=prb_monitor_req_data)
             if not prb_monitor_data:
-                logger.error(f'获取prb fetch状态错误：{prb_monitor_data}', exc_info=True)
+                logger.error(f'获取prb fetch状态错误：{prb_monitor_data}')
                 continue
             fetcher_state = prb_monitor_data['content']['fetcherStateUpdate']
 
