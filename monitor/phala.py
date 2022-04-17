@@ -144,6 +144,7 @@ class PhalaMonitor(Monitor):
                 if container.status != 'running':
                     logger.error(f'监控的docker容器状态异常! name: {name}, status: {container.status}')
                     await self._alert(f'监控的docker容器状态异常! name: {name}, status: {container.status}')
+                    container.restart()
 
             # 监控khala节点的高度
             khala_node_req = {"id": 1, "jsonrpc": "2.0", "method": "system_syncState", "params": []}
@@ -156,7 +157,7 @@ class PhalaMonitor(Monitor):
             highest_height = khala_node_data['result']['highestBlock']
             logger.info(f'检查node同步高度，当前同步高度：{current_height}，链上高度：{highest_height}')
 
-            if highest_height - current_height > 3:
+            if highest_height - current_height > 8:
                 logger.info(f'当前同步高度落后于链上高度：{highest_height - current_height}，开始重启node')
                 containers['node'].stop()
                 containers['node'].start()
