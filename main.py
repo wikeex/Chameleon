@@ -28,13 +28,15 @@ async def main():
         alert_limit=float(config.get('nbminer', 'alert_limit'))
     )
     workers = [worker.strip() for worker in config.get('phala', 'workers').split(',')]
-    phala_monitor = PhalaMonitor(workers)
+    prb_host = config.get('phala', 'prb_host')
+    khala_node_host = config.get('phala', 'khala_node_host')
+    phala_monitor = PhalaMonitor(workers, prb_host, khala_node_host)
 
     await asyncio.gather(
-        hub.run(),
-        smoke.release(),
-        chia_monitor.monitor(),
-        nbminer_monitor.monitor(),
+        # hub.run(),
+        # smoke.release(),
+        # chia_monitor.monitor(),
+        # nbminer_monitor.monitor(),
         phala_monitor.monitor()
     )
 
