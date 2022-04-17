@@ -179,7 +179,7 @@ class PhalaMonitor(Monitor):
             workers = [worker for worker in workers if not worker['deleted'] and worker['enabled']]
             logger.info(f'当前监控的所有worker：{workers}')
 
-            workers_state_req = {"queryWorkerState": {"ids": [{'uuid': worker['uuid'] for worker in workers}]}}
+            workers_state_req = {"queryWorkerState": {"ids": [{'uuid': worker['uuid']} for worker in workers]}}
             workers_state_data = await self._post(worker_url, json=workers_state_req)
 
             for worker in workers_state_data['content']['workerStateUpdate']['workerStates']:
