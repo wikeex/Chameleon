@@ -37,7 +37,7 @@ class PhalaMonitor(Monitor):
         try:
             headers = {"Content-Type": "application/json"}
             async with aiohttp.ClientSession() as session:
-                async with session.post(url, data=data, headers=headers, **kwargs) as response:
+                async with session.post(url, json=data, headers=headers, **kwargs) as response:
                     return await response.json()
         except Exception as e:
             logger.error(f'向{url}发送post请求发生错误：{e}', exc_info=True)
