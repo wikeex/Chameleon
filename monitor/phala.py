@@ -104,7 +104,7 @@ class PhalaMonitor(Monitor):
                 continue
             fetcher_state = prb_monitor_data['content']['fetcherStateUpdate']
 
-            logger.info(f'fetch同步状态synched：{fetcher_state["synched"]}')
+            logger.info(f'fetch是否已经同步synched：{fetcher_state["synched"]}')
             if fetcher_state['synched'] is False:
                 sync_diff = fetcher_state['paraBlobHeight'] - self.prb_fetcher_block
                 logger.info(f'上次同步到的高度：{self.prb_fetcher_block}，本次同步到的高度：{fetcher_state["paraBlobHeight"]}')
@@ -112,6 +112,7 @@ class PhalaMonitor(Monitor):
                     self.prb_fetcher_working = False
             else:
                 self.prb_fetcher_working = True
+
             self.prb_fetcher_block = fetcher_state['paraBlobHeight']
 
     @exception_catch
@@ -164,6 +165,7 @@ class PhalaMonitor(Monitor):
                 continue
 
             # 监控fetch运行状态
+            logger.info(f'prb fetch当前运行状态：{self.prb_fetcher_working}')
             if self.prb_fetcher_working is not True:
                 logger.info(f'prb fetch当前未正常运行，现在重启。')
                 containers['fetch'].restart()
