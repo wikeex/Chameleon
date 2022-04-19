@@ -31,6 +31,7 @@ class PhalaMonitor(Monitor):
         self.prb_host = prb_host
         self.node_host = node_host
         self.prb_fetcher_working = True
+        self.prb_fetcher_block = 0
 
     @staticmethod
     async def _post(url: str, *, data: Any = None, **kwargs: Any):
@@ -95,7 +96,6 @@ class PhalaMonitor(Monitor):
         prb_monitor_req_data = {
             'callOnlineFetcher': {}
         }
-        speed_window = []
         while True:
             await asyncio.sleep(20)
             prb_monitor_data = await self._post(prb_monitor_url, json=prb_monitor_req_data)
@@ -105,15 +105,13 @@ class PhalaMonitor(Monitor):
             fetcher_state = prb_monitor_data['content']['fetcherStateUpdate']
 
             logger.info(f'fetch同步状态：{fetcher_state["synched"]}')
-            if fetcher_state['synched'] is not True:
-                if len(speed_window) >= 3:
-                    speed_window = speed_window[:2]
-                speed_window.append(fetcher_state['speed'])
-                avg_speed = sum(speed_window) / 3
-                if fetcher_state['target_blocks'] > 0 and avg_speed <= 0:
+            if fetcher_state['synched'] is False:
+                sync_diff = fetcher_state['paraBlobHeight'] - self.prb_fetcher_block
+                if sync_diff < 1:
                     self.prb_fetcher_working = False
             else:
                 self.prb_fetcher_working = True
+            self.prb_fetcher_block = fetcher_state['paraBlobHeight']
 
     @exception_catch
     async def _prb_monitor(self):
