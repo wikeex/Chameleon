@@ -161,6 +161,8 @@ class PhalaMonitor(Monitor):
                 containers['fetch'].start()
                 containers['lifecycle'].start()
                 containers['trade'].start()
+                # 重启过后不能继续执行，下面的服务可能还没准备好，重新开启循环
+                continue
 
             # 监控fetch运行状态
             if self.prb_fetcher_working is not True:
