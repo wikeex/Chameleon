@@ -104,9 +104,10 @@ class PhalaMonitor(Monitor):
                 continue
             fetcher_state = prb_monitor_data['content']['fetcherStateUpdate']
 
-            logger.info(f'fetch同步状态：{fetcher_state["synched"]}')
+            logger.info(f'fetch同步状态synched：{fetcher_state["synched"]}')
             if fetcher_state['synched'] is False:
                 sync_diff = fetcher_state['paraBlobHeight'] - self.prb_fetcher_block
+                logger.info(f'上次同步到的高度：{self.prb_fetcher_block}，本次同步到的高度：{fetcher_state["paraBlobHeight"]}')
                 if sync_diff < 1:
                     self.prb_fetcher_working = False
             else:
