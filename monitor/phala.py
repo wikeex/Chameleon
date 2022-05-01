@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import aiohttp
 from substrateinterface import SubstrateInterface
+from websocket import WebSocketConnectionClosedException
 
 from log import logger
 from monitor.base import Monitor
@@ -75,9 +76,10 @@ class PhalaMonitor(Monitor):
                         loop.run_until_complete(self._alert(f'substrate worker {worker} 非正常工作状态，请检查！'))
                     else:
                         logger.info(f'substrate worker {worker} state is {result["state"]}')
+                except WebSocketConnectionClosedException as e:
+                    logger.info(f'fetch substrate worker {worker} status encounter a network error: {e}')
                 except Exception as e:
-                    logger.error(f'fetch substrate worker {worker} status encounter an error: {e}', exc_info=True)
-                    loop.run_until_complete(self._alert(f'获取worker状态失败，请检查网络或节点状态！'))
+                    logger.info(f'fetch substrate worker {worker} status encounter a unknown error: {e}', exc_info=True)
 
     async def monitor(self):
         pool = ThreadPoolExecutor(max_workers=10)
@@ -147,12 +149,17 @@ class PhalaMonitor(Monitor):
             # 监控khala节点的高度
             khala_node_req = {"id": 1, "jsonrpc": "2.0", "method": "system_syncState", "params": []}
             khala_node_data = await self._post(self.node_host, json=khala_node_req)
-            if not khala_node_data:
+            if khala_node_data is None:
                 logger.error(f'获取khala节点高度错误：{khala_node_data}', exc_info=True)
                 continue
 
-            current_height = khala_node_data['result']['currentBlock']
-            highest_height = khala_node_data['result']['highestBlock']
+            try:
+                current_height = khala_node_data['result']['currentBlock']
+                highest_height = khala_node_data['result']['highestBlock']
+            except KeyError:
+                logger.error(f'获取khala节点高度错误：{khala_node_data}', exc_info=True)
+                continue
+
             logger.info(f'检查node同步高度，当前同步高度：{current_height}，链上高度：{highest_height}')
 
             if highest_height - current_height > 8:
