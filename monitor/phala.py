@@ -175,7 +175,7 @@ class PhalaMonitor(Monitor):
             # 监控fetch运行状态
             logger.info(f'prb fetch当前运行状态：{self.prb_fetcher_working}')
             if self.prb_fetcher_working is not True:
-                logger.info(f'prb fetch当前未正常运行，现在重启。')
+                logger.error(f'prb fetch当前未正常运行，现在重启。')
                 containers['fetch'].restart()
 
             # 监控worker同步状态
