@@ -158,6 +158,7 @@ class PhalaMonitor(Monitor):
                 highest_height = khala_node_data['result']['highestBlock']
             except KeyError:
                 logger.error(f'获取khala节点高度错误：{khala_node_data}', exc_info=True)
+                # TODO： 添加告警通道
                 continue
 
             logger.info(f'检查node同步高度，当前同步高度：{current_height}，链上高度：{highest_height}')
@@ -194,11 +195,13 @@ class PhalaMonitor(Monitor):
             for worker in workers_state_data['content']['workerStateUpdate']['workerStates']:
                 logger.info(f'worker {worker["worker"]["name"]}当前同步状态：{worker["status"]}')
                 if worker['status'] == 'S_ERROR':
+                    logger.info(f'worker同步状态异常，异常信息：{worker["lastMessage"]}')
                     restart_worker_req = {
                         "requestStartWorkerLifecycle": {"requests": [{"id": {"uuid": worker['worker']['uuid']}}]}
                     }
                     headers = {"Content-Type": "application/json"}
                     async with aiohttp.ClientSession() as session:
+                        logger.info(f'正在重启worker，publicKey：{worker["publicKey"]}')
                         async with session.post(worker_url, json=restart_worker_req, headers=headers) as response:
                             if response.status != 200:
                                 logger.error(f'重启worker时发生错误，http状态码：{response.status}')
