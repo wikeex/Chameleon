@@ -194,7 +194,8 @@ class PhalaMonitor(Monitor):
 
             for worker in workers_state_data['content']['workerStateUpdate']['workerStates']:
                 logger.info(f'worker {worker["worker"]["name"]}当前同步状态：{worker["status"]}')
-                if worker['status'] == 'S_ERROR':
+                if worker['status'] == 'S_ERROR' or (
+                        worker['status'] == 'S_PRE_MINING' and 'unresponsive' in worker["lastMessage"]):
                     logger.info(f'worker同步状态异常，异常信息：{worker["lastMessage"]}')
                     restart_worker_req = {
                         "requestStartWorkerLifecycle": {"requests": [{"id": {"uuid": worker['worker']['uuid']}}]}
