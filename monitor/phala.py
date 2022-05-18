@@ -81,7 +81,7 @@ class PhalaMonitor(Monitor):
                         loop.run_until_complete(self._alert(f'substrate worker {worker} 非正常工作状态，请检查！'))
                     else:
                         logger.info(f'substrate worker {worker} state is {result["state"]}')
-                except WebSocketConnectionClosedException as e:
+                except (WebSocketConnectionClosedException, BrokenPipeError) as e:
                     logger.info(f'fetch substrate worker {worker} status encounter a network error: {e}')
                 except Exception as e:
                     logger.info(f'fetch substrate worker {worker} status encounter a unknown error: {e}', exc_info=True)
