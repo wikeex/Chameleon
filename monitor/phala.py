@@ -2,6 +2,7 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
 import aiohttp
+from aiohttp import ContentTypeError
 from substrateinterface import SubstrateInterface
 from websocket import WebSocketConnectionClosedException
 
@@ -41,6 +42,10 @@ class PhalaMonitor(Monitor):
             async with aiohttp.ClientSession() as session:
                 async with session.post(url, data=data, headers=headers, **kwargs) as response:
                     return await response.json()
+        except ConnectionRefusedError as e:
+            logger.error(f'向{url}发送post请求发生连接错误：{e}', exc_info=True)
+        except ContentTypeError:
+            logger.error(f'向{url}发送post请求发生响应类型错误，http: {response.status}，响应码原始响应：{response.content}', exc_info=True)
         except Exception as e:
             logger.error(f'向{url}发送post请求发生错误：{e}', exc_info=True)
 
@@ -102,7 +107,9 @@ class PhalaMonitor(Monitor):
             await asyncio.sleep(20)
             prb_monitor_data = await self._post(prb_monitor_url, json=prb_monitor_req_data)
             if not prb_monitor_data:
-                logger.error(f'获取prb fetch状态错误：{prb_monitor_data}')
+                msg = f'获取prb fetch状态错误：{prb_monitor_data}'
+                logger.error(msg)
+                await self._alert(msg)
                 continue
             fetcher_state = prb_monitor_data['content']['fetcherStateUpdate']
 
@@ -202,7 +209,7 @@ class PhalaMonitor(Monitor):
                     }
                     headers = {"Content-Type": "application/json"}
                     async with aiohttp.ClientSession() as session:
-                        logger.info(f'正在重启worker，publicKey：{worker["publicKey"]}')
+                        logger.info(f'正在重启worker，publicKey：{worker.get("publicKey")}, uuid: {worker["worker"]["uuid"]}')
                         async with session.post(worker_url, json=restart_worker_req, headers=headers) as response:
                             if response.status != 200:
                                 logger.error(f'重启worker时发生错误，http状态码：{response.status}')
