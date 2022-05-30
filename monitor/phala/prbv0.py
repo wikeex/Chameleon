@@ -1,11 +1,6 @@
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
-
 import aiohttp
 from aiohttp import ContentTypeError
-from substrateinterface import SubstrateInterface
-from websocket import WebSocketConnectionClosedException
-
 from log import logger
 from monitor.base import Monitor
 from typing import List, Tuple, Union, Any
@@ -14,22 +9,14 @@ import docker
 from utils import exception_catch
 
 
-class PhalaMonitor(Monitor):
+class PrbV0Monitor(Monitor):
 
-    def __init__(self, workers: Union[List[str], Tuple[str]],
+    def __init__(self,
                  prb_host: str,
                  node_host: str,
-                 substrate_url: str = f'wss://khala.api.onfinality.io/public-ws',
                  interval: int = 30
                  ):
         super().__init__(interval=interval)
-        self.substrate_url = substrate_url
-        self.workers = workers
-        self.substrate = SubstrateInterface(
-            url="wss://khala.api.onfinality.io/public-ws",
-            ss58_format=42,
-            type_registry_preset='kusama'
-        )
         self.prb_host = prb_host
         self.node_host = node_host
         self.prb_fetcher_working = True
@@ -49,48 +36,8 @@ class PhalaMonitor(Monitor):
         except Exception as e:
             logger.error(f'向{url}发送post请求发生错误：{e}', exc_info=True)
 
-    def _fetch_worker_status(self, worker_public_hash):
-        # 获取worker绑定的账户
-        account = self.substrate.query(
-            module='PhalaMining',
-            storage_function='WorkerBindings',
-            params=[worker_public_hash]
-        )
-
-        # 使用worker绑定的账户查询worker的状态
-        result = self.substrate.query(
-            module='PhalaMining',
-            storage_function='Miners',
-            params=[account.value]
-        )
-        return result.value
-
-    def _worker_monitor(self):
-        """
-        在substrate上获取worker挖矿状态
-        :return:
-        """
-        loop = asyncio.new_event_loop()
-        while True:
-            loop.run_until_complete(asyncio.sleep(self.internal))
-            for worker in self.workers:
-                try:
-                    result = self._fetch_worker_status(worker)
-                    if result['state'] not in ['MiningIdle', 'Mining']:
-                        logger.error(f'substrate worker {worker} is abnormal, current state: {result["state"]}')
-                        loop.run_until_complete(self._alert(f'substrate worker {worker} 非正常工作状态，请检查！'))
-                    else:
-                        logger.info(f'substrate worker {worker} state is {result["state"]}')
-                except (WebSocketConnectionClosedException, BrokenPipeError) as e:
-                    logger.info(f'fetch substrate worker {worker} status encounter a network error: {e}')
-                except Exception as e:
-                    logger.info(f'fetch substrate worker {worker} status encounter a unknown error: {e}', exc_info=True)
-
     async def monitor(self):
-        pool = ThreadPoolExecutor(max_workers=10)
-        worker_task = asyncio.get_event_loop().run_in_executor(pool, self._worker_monitor)
         await asyncio.gather(
-            worker_task,
             self._prb_fetcher_status(),
             self._prb_monitor()
         )
@@ -202,7 +149,8 @@ class PhalaMonitor(Monitor):
             for worker in workers_state_data['content']['workerStateUpdate']['workerStates']:
                 logger.info(f'worker {worker["worker"]["name"]}当前同步状态：{worker["status"]}')
                 if worker['status'] == 'S_ERROR' or (
-                        worker['status'] == 'S_PRE_MINING' and 'unresponsive' in worker["lastMessage"]):
+                        worker['status'] in ['S_PRE_MINING', 'S_MINING'] and 'unresponsive' in worker["lastMessage"]):
+                    # TODO: 添加挖矿过程中unresponsive的处理，需要通过计算同步高度是否变化方式进行判断
                     logger.info(f'worker同步状态异常，异常信息：{worker["lastMessage"]}')
                     restart_worker_req = {
                         "requestStartWorkerLifecycle": {"requests": [{"id": {"uuid": worker['worker']['uuid']}}]}
@@ -216,11 +164,7 @@ class PhalaMonitor(Monitor):
 
 
 if __name__ == '__main__':
-    phala = PhalaMonitor(
-        [
-            '0xfce4d9fed94760c944b0c9bcbcf8d64b2a37137c6e1408568a7206b15d02b658',
-            '0x520bbce00afab260ec99dbeaff70d1726482126aff28bfac94ad5d4d09df8a55'
-        ],
+    phala = PrbV0Monitor(
         prb_host='http://127.0.0.1:3000',
         node_host='http://127.0.0.1:9933'
     )

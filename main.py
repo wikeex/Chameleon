@@ -3,7 +3,7 @@ from hub import Hub
 from smoke import Smoke
 from monitor.chia import ChiaMonitor
 from monitor.nbminer import NBMinerMonitor
-from monitor.phala import PhalaMonitor
+from monitor.phala import PrbV0Monitor
 from config import config
 
 
@@ -30,7 +30,7 @@ async def main():
     workers = [worker.strip() for worker in config.get('phala', 'workers').split(',')]
     prb_host = config.get('phala', 'prb_host')
     khala_node_host = config.get('phala', 'khala_node_host')
-    phala_monitor = PhalaMonitor(workers, prb_host, khala_node_host)
+    phala_monitor = PrbV0Monitor(workers, prb_host, khala_node_host)
 
     await asyncio.gather(
         # hub.run(),
