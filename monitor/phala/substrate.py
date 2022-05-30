@@ -1,4 +1,6 @@
+import asyncio
 import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Union, List, Tuple
 
 from substrateinterface import SubstrateInterface
@@ -59,7 +61,8 @@ class SubstrateMonitor(Monitor):
                     logger.info(f'fetch substrate worker {worker} status encounter a unknown error: {e}', exc_info=True)
 
     async def monitor(self):
-        pass
+        pool = ThreadPoolExecutor(max_workers=10)
+        await asyncio.get_event_loop().run_in_executor(pool, self._worker_monitor)
 
     def _alert(self, message: str):
         pass
