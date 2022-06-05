@@ -147,20 +147,23 @@ class PrbV0Monitor(Monitor):
             workers_state_data = await self._post(worker_url, json=workers_state_req)
 
             for worker in workers_state_data['content']['workerStateUpdate']['workerStates']:
-                logger.info(f'worker {worker["worker"]["name"]}当前同步状态：{worker["status"]}')
-                if worker['status'] == 'S_ERROR' or (
-                        worker['status'] in ['S_PRE_MINING', 'S_MINING'] and 'unresponsive' in worker["lastMessage"]):
-                    # TODO: 添加挖矿过程中unresponsive的处理，需要通过计算同步高度是否变化方式进行判断
-                    logger.info(f'worker同步状态异常，异常信息：{worker["lastMessage"]}')
-                    restart_worker_req = {
-                        "requestStartWorkerLifecycle": {"requests": [{"id": {"uuid": worker['worker']['uuid']}}]}
-                    }
-                    headers = {"Content-Type": "application/json"}
-                    async with aiohttp.ClientSession() as session:
-                        logger.info(f'正在重启worker，publicKey：{worker.get("publicKey")}, uuid: {worker["worker"]["uuid"]}')
-                        async with session.post(worker_url, json=restart_worker_req, headers=headers) as response:
-                            if response.status != 200:
-                                logger.error(f'重启worker时发生错误，http状态码：{response.status}')
+                try:
+                    logger.info(f'worker {worker["worker"]["name"]}当前同步状态：{worker["status"]}')
+                    if worker['status'] == 'S_ERROR' or (
+                            worker['status'] in ['S_PRE_MINING', 'S_MINING'] and 'unresponsive' in worker["lastMessage"]):
+                        # TODO: 添加挖矿过程中unresponsive的处理，需要通过计算同步高度是否变化方式进行判断
+                        logger.info(f'worker同步状态异常，异常信息：{worker["lastMessage"]}')
+                        restart_worker_req = {
+                            "requestStartWorkerLifecycle": {"requests": [{"id": {"uuid": worker['worker']['uuid']}}]}
+                        }
+                        headers = {"Content-Type": "application/json"}
+                        async with aiohttp.ClientSession() as session:
+                            logger.info(f'正在重启worker，publicKey：{worker.get("publicKey")}, uuid: {worker["worker"]["uuid"]}')
+                            async with session.post(worker_url, json=restart_worker_req, headers=headers) as response:
+                                if response.status != 200:
+                                    logger.error(f'重启worker时发生错误，http状态码：{response.status}')
+                except KeyError:
+                    logger.error(f'get worker status error! worker: {worker}', exc_info=True)
 
 
 if __name__ == '__main__':
